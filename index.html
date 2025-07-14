@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Printing Quote Calculator</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -58,19 +58,19 @@
         <div class="form-grid">
           <div class="form-group">
             <label>X Dimension (mm)</label>
-            <input type="number" id="dimX" value="50" min="1" step="0.1">
+            <input type="number" id="dimX" value="50" min="1" step="0.1" />
           </div>
           <div class="form-group">
             <label>Y Dimension (mm)</label>
-            <input type="number" id="dimY" value="50" min="1" step="0.1">
+            <input type="number" id="dimY" value="50" min="1" step="0.1" />
           </div>
           <div class="form-group">
             <label>Z Dimension (mm)</label>
-            <input type="number" id="dimZ" value="50" min="1" step="0.1">
+            <input type="number" id="dimZ" value="50" min="1" step="0.1" />
           </div>
           <div class="form-group">
             <label>Part Volume (cm³)</label>
-            <input type="number" id="partVol" value="25" min="0.1" step="0.1">
+            <input type="number" id="partVol" value="25" min="0.1" step="0.1" />
           </div>
         </div>
       </div>
@@ -80,7 +80,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Quantity</label>
-            <input type="number" id="quantity" value="10" min="1" step="1">
+            <input type="number" id="quantity" value="10" min="1" step="1" />
           </div>
           <div class="form-group">
             <label>Material</label>
@@ -92,11 +92,11 @@
           </div>
           <div class="form-group">
             <label>Geometry Rate (€/cm³)</label>
-            <input type="number" id="geomRate" value="0.20" min="0.01" step="0.01">
+            <input type="number" id="geomRate" value="0.20" min="0.01" step="0.01" />
           </div>
           <div class="form-group">
             <label>Margin (%)</label>
-            <input type="number" id="margin" value="30" min="0" max="100" step="1">
+            <input type="number" id="margin" value="30" min="0" max="100" step="1" />
           </div>
         </div>
       </div>
@@ -104,15 +104,15 @@
       <div class="postprocessing">
         <h3>Post-Processing Add-ons</h3>
         <div class="checkbox-group">
-          <input type="checkbox" id="dyeing">
+          <input type="checkbox" id="dyeing" />
           <label for="dyeing">Dyeing (€0.08/g up to 1kg, then €0.06/g, min €50)</label>
         </div>
         <div class="checkbox-group">
-          <input type="checkbox" id="smoothing">
+          <input type="checkbox" id="smoothing" />
           <label for="smoothing">Chemical Smoothing (€0.12/g up to 1kg, then €0.10/g, min €80)</label>
         </div>
         <div class="checkbox-group">
-          <input type="checkbox" id="vibro">
+          <input type="checkbox" id="vibro" />
           <label for="vibro">Vibro Finishing (€20 flat fee)</label>
         </div>
       </div>
@@ -128,7 +128,7 @@
   </div>
 
   <script>
-    let currentTech = 'MJF';
+    let currentTech = "MJF";
 
     const constants = {
       buildVolume: 36115.2,
@@ -140,44 +140,44 @@
       workerRate: 50,
       setupTime: 0.5,
       mixingTime: 0.1,
-      nestingTime: 1.0
+      nestingTime: 1.0,
     };
 
     const materials = {
       pa12: { density: 1.01, price: 40, productivity: 45 },
       pa11: { density: 1.03, price: 75, productivity: 42 },
-      pa12GF: { density: 1.20, price: 41, productivity: 38 }
+      pa12GF: { density: 1.20, price: 41, productivity: 38 },
     };
 
     const techSettings = {
       MJF: { machineRate: 35, refreshRate: 0 },
-      SLS: { machineRate: 40, refreshRate: 0.15 }
+      SLS: { machineRate: 40, refreshRate: 0.15 },
     };
 
     function switchTech(tech) {
       currentTech = tech;
-      document.querySelectorAll('.tech-tab').forEach(tab => tab.classList.remove('active'));
-      event.target.classList.add('active');
+      document.querySelectorAll(".tech-tab").forEach((tab) => tab.classList.remove("active"));
+      event.target.classList.add("active");
     }
 
     function getQtyDiscount(qty) {
       if (qty >= 1000) return 0.75;
-      if (qty >= 500) return 0.80;
+      if (qty >= 500) return 0.8;
       if (qty >= 100) return 0.85;
-      if (qty >= 50) return 0.90;
+      if (qty >= 50) return 0.9;
       if (qty >= 25) return 0.95;
       return 1.0;
     }
 
     function calculateQuote() {
-      const dimX = parseFloat(document.getElementById('dimX').value);
-      const dimY = parseFloat(document.getElementById('dimY').value);
-      const dimZ = parseFloat(document.getElementById('dimZ').value);
-      const partVol = parseFloat(document.getElementById('partVol').value);
-      const qty = parseInt(document.getElementById('quantity').value);
-      const matType = document.getElementById('material').value;
-      const geomRate = parseFloat(document.getElementById('geomRate').value);
-      const margin = parseFloat(document.getElementById('margin').value);
+      const dimX = parseFloat(document.getElementById("dimX").value);
+      const dimY = parseFloat(document.getElementById("dimY").value);
+      const dimZ = parseFloat(document.getElementById("dimZ").value);
+      const partVol = parseFloat(document.getElementById("partVol").value);
+      const qty = parseInt(document.getElementById("quantity").value);
+      const matType = document.getElementById("material").value;
+      const geomRate = parseFloat(document.getElementById("geomRate").value);
+      const margin = parseFloat(document.getElementById("margin").value);
 
       const mat = materials[matType];
       const tech = techSettings[currentTech];
@@ -204,6 +204,10 @@
         }
       }
 
+      const marginFactor = 1 + (margin / 100);
+      const buildCostWithMargin = buildCostPerPart * marginFactor;
+      const buildCostDiff = buildCostWithMargin - buildCostPerPart;
+
       const matCost = (partVol * mat.density) / 1000 * mat.price * (1 + tech.refreshRate);
 
       const totalPartHours = (partVol / mat.productivity) * qty;
@@ -219,60 +223,66 @@
       const nestTotal = constants.nestingTime * constants.workerRate;
       const nestingCost = nestTotal / Math.max(effectiveFit, 1);
 
-      const marginFactor = 1 + (margin / 100);
-      const buildCostWithMargin = buildCostPerPart * marginFactor;
+      const unitPriceNoMargin =
+        buildCostPerPart +
+        matCost +
+        energyCost +
+        laborCost +
+        nestingCost +
+        machineCostPerPart;
 
-      const subtotal = buildCostWithMargin + matCost + energyCost + laborCost + nestingCost;
+      const unitPrice = unitPriceNoMargin + buildCostDiff;
+
+      const discountFactor = getQtyDiscount(qty);
+      const discountedUnitPrice = unitPrice * discountFactor;
 
       const rawGeo = partVol * geomRate;
       const geoCost = qty < 10 ? Math.max(rawGeo, constants.geometryFloor) : rawGeo;
 
-      const discountFactor = getQtyDiscount(qty);
-      const unitPrice = Math.max(subtotal * discountFactor, geoCost);
+      const finalUnitPrice = Math.max(discountedUnitPrice, geoCost);
 
       const totalWeight = partVol * mat.density * qty;
       let postProcessingCost = 0;
 
-      if (document.getElementById('dyeing').checked) {
+      if (document.getElementById("dyeing").checked) {
         postProcessingCost += Math.max(
           totalWeight <= 1000 ? totalWeight * 0.08 : totalWeight * 0.06,
           50
         );
       }
 
-      if (document.getElementById('smoothing').checked) {
+      if (document.getElementById("smoothing").checked) {
         postProcessingCost += Math.max(
           totalWeight <= 1000 ? totalWeight * 0.12 : totalWeight * 0.10,
           80
         );
       }
 
-      if (document.getElementById('vibro').checked) {
+      if (document.getElementById("vibro").checked) {
         postProcessingCost += 20;
       }
 
-      const totalPrice = unitPrice * qty + postProcessingCost;
+      const totalPrice = finalUnitPrice * qty + postProcessingCost;
 
       displayResults({
         buildCost: buildCostPerPart,
-        buildCostWithMargin: buildCostWithMargin,
-        materialCost: matCost,
+        buildCostWithMargin,
         machineCost: machineCostPerPart,
-        energyCost: energyCost,
-        laborCost: laborCost,
-        nestingCost: nestingCost,
-        subtotal: subtotal,
-        discountFactor: discountFactor,
-        unitPrice: unitPrice,
-        postProcessingCost: postProcessingCost,
-        totalPrice: totalPrice,
-        qty: qty
+        materialCost: matCost,
+        energyCost,
+        laborCost,
+        nestingCost,
+        discountFactor,
+        unitPrice: finalUnitPrice,
+        postProcessingCost,
+        totalPrice,
+        qty,
       });
     }
 
     function displayResults(results) {
-      const breakdown = document.getElementById('breakdown');
-      const totalPrice = document.getElementById('totalPrice');
+      const breakdown = document.getElementById("breakdown");
+      const totalPrice = document.getElementById("totalPrice");
 
       breakdown.innerHTML = `
         <div class="result-item">
@@ -288,7 +298,7 @@
           <span class="result-value">€${results.materialCost.toFixed(2)}</span>
         </div>
         <div class="result-item">
-          <span class="result-label">Machine Cost (info only):</span>
+          <span class="result-label">Machine Cost (fractured):</span>
           <span class="result-value">€${results.machineCost.toFixed(2)}</span>
         </div>
         <div class="result-item">
@@ -311,17 +321,22 @@
           <span class="result-label">Unit Price:</span>
           <span class="result-value">€${results.unitPrice.toFixed(2)}</span>
         </div>
-        ${results.postProcessingCost > 0 ? `
-        <div class="result-item">
-          <span class="result-label">Post-Processing:</span>
-          <span class="result-value">€${results.postProcessingCost.toFixed(2)}</span>
-        </div>` : ''}
+        ${
+          results.postProcessingCost > 0
+            ? `<div class="result-item">
+                  <span class="result-label">Post-Processing:</span>
+                  <span class="result-value">€${results.postProcessingCost.toFixed(2)}</span>
+               </div>`
+            : ""
+        }
       `;
 
-      totalPrice.innerHTML = `Total Quote: €${results.totalPrice.toFixed(2)} (${results.qty} parts)`;
+      totalPrice.innerHTML = `Total Quote: €${results.totalPrice.toFixed(
+        2
+      )} (${results.qty} parts)`;
 
-      document.getElementById('results').style.display = 'block';
-      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById("results").style.display = "block";
+      document.getElementById("results").scrollIntoView({ behavior: "smooth" });
     }
 
     window.onload = () => calculateQuote();
