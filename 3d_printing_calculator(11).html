@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Printing Cost Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+
+            .container {
+                background: #2d3748;
+                color: #e2e8f0;
+            }
+
+            .header {
+                background: linear-gradient(135deg, #1a202c 0%, #2a4365 100%);
+            }
+
+            .input-section {
+                background: #374151;
+            }
+
+            .results-section {
+                background: #2d3748;
+                border-left: 1px solid #4a5568;
+            }
+
+            .form-group input, .form-group select {
+                background: #4a5568;
+                border: 2px solid #6b7280;
+                color: #e2e8f0;
+            }
+
+            .form-group input::placeholder {
+                color: #9ca3af;
+            }
+
+            .form-group input:focus, .form-group select:focus {
+                border-color: #667eea;
+                background: #374151;
+            }
+
+            .form-group label {
+                color: #e2e8f0;
+            }
+
+            .tech-btn {
+                background: #4a5568;
+                border: 2px solid #6b7280;
+                color: #e2e8f0;
+            }
+
+            .tech-btn:hover {
+                background: #374151;
+                border-color: #667eea;
+            }
+
+            .result-card {
+                background: #374151;
+                border-left: 4px solid #667eea;
+            }
+
+            .result-card h3 {
+                color: #e2e8f0;
+            }
+
+            .breakdown-label {
+                color: #cbd5e0;
+            }
+
+            .breakdown-value {
+                color: #e2e8f0;
+            }
+
+            .breakdown-item {
+                border-bottom: 1px solid #4a5568;
+            }
+
+            .checkbox-item {
+                background: #4a5568;
+            }
+
+            .checkbox-item label {
+                color: #fbbf24;
+            }
+
+            .post-processing h4 {
+                color: #e2e8f0;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .input-section {
+            padding: 40px;
+            background: #f8fafc;
+        }
+
+        .results-section {
+            padding: 40px;
+            background: white;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95em;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .tech-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tech-btn {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .tech-btn:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .tech-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .result-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .price-display {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .breakdown-label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .breakdown-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .post-processing {
+            margin-top: 20px;
+        }
+
+        .post-processing h4 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #fef5e7;
+            border-radius: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-item label {
+            color: #744210;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-section {
+                border-left: none;
+                border-top: 1px solid #e2e8f0;
+            }
+            
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>3D Printing Cost Calculator</h1>
+            <p>Professional pricing calculator for all 3D printing technologies</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="form-group">
+                    <label>Technology</label>
+                    <div class="tech-selector">
+                        <div class="tech-btn active" data-tech="MJF">MJF</div>
+                        <div class="tech-btn" data-tech="SLS">SLS</div>
+                        <div class="tech-btn" data-tech="SLA">SLA</div>
+                        <div class="tech-btn" data-tech="FDM">FDM</div>
+                        <div class="tech-btn" data-tech="DMLS">DMLS</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Part Dimensions (mm)</label>
+                    <div class="grid-3">
+                        <input type="number" id="dimX" placeholder="X" value="50" oninput="autoCalculateVolume()">
+                        <input type="number" id="dimY" placeholder="Y" value="50" oninput="autoCalculateVolume()">
+                        <input type="number" id="dimZ" placeholder="Z" value="25" oninput="autoCalculateVolume()">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Part Volume (cm³)</label>
+                        <input type="number" id="partVolume" value="25" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Surface Area (cm²)</label>
+                        <input type="number" id="surfaceArea" value="87.5" step="0.1">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="quantity" value="10" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Material</label>
+                        <select id="material">
+                            <option value="PA12">PA12 - €40/kg</option>
+                            <option value="PA11">PA11 - €75/kg</option>
+                            <option value="PA12GF">PA12GF - €41/kg</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Margin (%)</label>
+                        <input type="number" id="margin" value="30" min="0" max="100" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Packing Method</label>
+                        <select id="packingMethod">
+                            <option value="bounding_box">Bounding Box</option>
+                            <option value="volumetric">Volumetric Fill</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Geometry Rate (€/cm³)</label>
+                        <input type="number" id="geomRate" value="0.20" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Print Time (hours) - for SLA/FDM/DMLS</label>
+                        <input type="number" id="printTime" value="5" step="0.1">
+                    </div>
+                </div>
+
+                <div class="post-processing">
+                    <h4>Post-Processing Add-ons</h4>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dyeing">
+                            <label for="dyeing">Dyeing (€0.08/g up to 1kg, then €0.06/g, min €50)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="vapor_smoothing">
+                            <label for="vapor_smoothing">Vapor Smoothing (€0.12/g up to 1kg, then €0.10/g, min €80)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="painting">
+                            <label for="painting">Painting (€20.00 base + €0.05/cm²)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="vibro">
+                            <label for="vibro">Vibro Finishing (€20 flat fee)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="calculate-btn" onclick="calculatePrice()">Calculate Price</button>
+            </div>
+
+            <div class="results-section">
+                <div class="result-card">
+                    <h3>Final Quote</h3>
+                    <div class="price-display" id="finalPrice">€0.00</div>
+                    <div id="priceInfo"></div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Cost Breakdown</h3>
+                    <div id="costBreakdown"></div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Build Information</h3>
+                    <div id="buildInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Technology-specific settings with realistic parameters
+        const techSettings = {
+            MJF: { 
+                buildVolume: 36115.2, 
+                buildPrice: 1050,
+                packingFactor: 0.85,
+                machineRate: 35, 
+                refreshRate: 0,
+                materials: ['PA12', 'PA11', 'PA12GF']
+            },
+            SLS: { 
+                buildVolume: 39304,  
+                buildPrice: 1200,
+                packingFactor: 0.80,
+                machineRate: 40, 
+                refreshRate: 0.15,
+                materials: ['PA12', 'PA11', 'PA12GF']
+            },
+            SLA: { 
+                buildVolume: 20100,
+                buildPrice: 400,
+                packingFactor: 0.70,
+                machineRate: 35, 
+                refreshRate: 0,
+                materials: ['Resin']
+            },
+            FDM: { 
+                buildVolume: 23760,
+                buildPrice: 200,
+                packingFactor: 0.75,
+                machineRate: 15, 
+                refreshRate: 0,
+                materials: ['PLA']
+            },
+            DMLS: { 
+                buildVolume: 20313,
+                buildPrice: 2500,
+                packingFactor: 0.60,
+                machineRate: 120, 
+                refreshRate: 0,
+                scrapRate: 0.10,
+                materials: ['Metal']
+            }
+        };
+
+        const constants = {
+            geometryFloor: 30,
+            electricityRate: 0.24,
+            workerRate: 50,
+            setupTime: 0.5,
+            mixingTime: 0.1,
+            nestingTime: 1.0,
+            P_min: 30
+        };
+
+        const materials = {
+            PA12: { density: 1.01, price: 40, productivity: 45 },
+            PA11: { density: 1.03, price: 75, productivity: 42 },
+            PA12GF: { density: 1.20, price: 41, productivity: 38 },
+            Resin: { density: 1.2, price: 35, productivity: 25 },
+            PLA: { density: 1.24, price: 25, productivity: 30 },
+            Metal: { density: 8.0, price: 250, productivity: 5 }
+        };
+
+        // Build cost breakdown function
+        const getBuildCostExploded = (buildPrice) => ({
+            machineTime: buildPrice * 0.67,
+            depreciation: buildPrice * 0.19,
+            overheads: buildPrice * 0.095,
+            maintenance: buildPrice * 0.045,
+        });
+
+        // Technology selection with material filtering
+        let selectedTech = 'MJF';
+        document.querySelectorAll('.tech-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedTech = this.dataset.tech;
+                updateMaterialOptions();
+                calculatePrice();
+            });
+        });
+
+        function updateMaterialOptions() {
+            const materialSelect = document.getElementById('material');
+            const compatibleMaterials = techSettings[selectedTech].materials;
+            
+            // Save current selection if compatible
+            const currentValue = materialSelect.value;
+            
+            // Clear and repopulate
+            materialSelect.innerHTML = '';
+            compatibleMaterials.forEach(matKey => {
+                const option = document.createElement('option');
+                option.value = matKey;
+                option.textContent = `${matKey} - €${materials[matKey].price}/kg`;
+                materialSelect.appendChild(option);
+            });
+            
+            // Restore selection if still compatible
+            if (compatibleMaterials.includes(currentValue)) {
+                materialSelect.value = currentValue;
+            }
+        }
+
+        function autoCalculateVolume() {
+            const dimX = parseFloat(document.getElementById('dimX').value) || 0;
+            const dimY = parseFloat(document.getElementById('dimY').value) || 0;
+            const dimZ = parseFloat(document.getElementById('dimZ').value) || 0;
+            
+            if (dimX > 0 && dimY > 0 && dimZ > 0) {
+                const volume = (dimX * dimY * dimZ * 0.6) / 1000;
+                document.getElementById('partVolume').value = volume.toFixed(2);
+                
+                if (!document.getElementById('surfaceArea').value) {
+                    const surfaceArea = 2 * ((dimX * dimY) + (dimX * dimZ) + (dimY * dimZ)) / 100;
+                    document.getElementById('surfaceArea').value = surfaceArea.toFixed(2);
+                }
+            }
+            calculatePrice();
+        }
+
+        function getQtyDiscount(qty) {
+            if (qty <= 1) return 1.00;
+            if (qty <= 50) return 1.00 + (qty - 1) / 49 * (0.65 - 1.00);
+            if (qty <= 100) return 0.65 + (qty - 50) / 50 * (0.63 - 0.65);
+            if (qty <= 500) return 0.63 + (qty - 100) / 400 * (0.55 - 0.63);
+            if (qty <= 1000) return 0.55 + (qty - 500) / 500 * (0.47 - 0.55);
+            if (qty <= 5000) return 0.47 + (qty - 1000) / 4000 * (0.32 - 0.47);
+            return 0.32;
+        }
+
+        function getPremium(fraction) {
+            if (fraction < 0.03) return 2.5;
+            if (fraction < 0.10) return 1.9;
+            if (fraction < 0.25) return 1.3;
+            return 1.0;
+        }
+
+        function calculatePrice() {
+            const dimX = parseFloat(document.getElementById('dimX').value) || 50;
+            const dimY = parseFloat(document.getElementById('dimY').value) || 50;
+            const dimZ = parseFloat(document.getElementById('dimZ').value) || 25;
+            const partVol = parseFloat(document.getElementById('partVolume').value) || 25;
+            const surfaceArea = parseFloat(document.getElementById('surfaceArea').value) || 87.5;
+            const qty = parseInt(document.getElementById('quantity').value) || 10;
+            const materialType = document.getElementById('material').value || 'PA12';
+            const geomRate = parseFloat(document.getElementById('geomRate').value) || 0.20;
+            const margin = parseFloat(document.getElementById('margin').value) || 30;
+            const packingMethod = document.getElementById('packingMethod').value || 'bounding_box';
+            const printTime = parseFloat(document.getElementById('printTime').value) || 5;
+
+            const mat = materials[materialType];
+            const tech = techSettings[selectedTech];
+            const buildCostExploded = getBuildCostExploded(tech.buildPrice);
+            const bbVol = (dimX * dimY * dimZ) / 1000;
+
+            // Calculate parts per build
+            let effectiveFit;
+            if (packingMethod === 'bounding_box') {
+                const theoreticalFit = Math.floor(tech.buildVolume / bbVol);
+                effectiveFit = Math.floor(theoreticalFit * tech.packingFactor);
+            } else {
+                effectiveFit = Math.floor((tech.buildVolume * 0.12) / partVol);
+            }
+            effectiveFit = Math.max(1, effectiveFit);
+
+            const fullBuilds = Math.floor(qty / effectiveFit);
+            const partialParts = qty % effectiveFit;
+
+            // Build cost calculation
+            let totalBuildCost = fullBuilds * tech.buildPrice;
+            if (partialParts > 0) {
+                const fraction = (partialParts * bbVol) / tech.buildVolume;
+                totalBuildCost += fraction * tech.buildPrice;
+            }
+
+            let buildCostPerPart = totalBuildCost / qty;
+
+            // Apply premium for small partial builds
+            if (partialParts > 0) {
+                const fraction = (partialParts * bbVol) / tech.buildVolume;
+                const premium = getPremium(fraction);
+                buildCostPerPart *= premium;
+            }
+
+            // Material cost with refresh rate
+            const matCost = (partVol * mat.density) / 1000 * mat.price * (1 + tech.refreshRate);
+
+            // Geometric cost (only for volumetric method or if qty < 10)
+            let geoCost = 0;
+            if (packingMethod === 'volumetric' || qty < 10) {
+                const rawGeo = partVol * geomRate;
+                geoCost = qty < 10 ? Math.max(rawGeo, constants.geometryFloor) : rawGeo;
+            }
+
+            // Calculate individual cost components for display
+            const buildFraction = buildCostPerPart / tech.buildPrice;
+            const machineCost = buildCostExploded.machineTime * buildFraction;
+            const depreciationCost = buildCostExploded.depreciation * buildFraction;
+            const overheadsCost = buildCostExploded.overheads * buildFraction;
+            const maintenanceCost = buildCostExploded.maintenance * buildFraction;
+
+            // Base unit price calculation
+            const unitPriceNoMargin = buildCostPerPart + matCost;
+
+            // Apply margin
+            const marginFactor = 1 + (margin / 100);
+            const unitPrice = unitPriceNoMargin * marginFactor;
+
+            // Apply quantity discount
+            const discountFactor = getQtyDiscount(qty);
+            const discountedUnitPrice = unitPrice * discountFactor;
+
+            // Apply geometry cost minimum
+            const finalUnitPrice = Math.max(discountedUnitPrice, geoCost);
+
+            // Post-processing costs (ONLY if selected)
+            const totalWeight = partVol * mat.density * qty;
+            let postProcessingCost = 0;
+
+            if (document.getElementById('dyeing').checked) {
+                const dyeCost = Math.max(
+                    totalWeight <= 1000 ? totalWeight * 0.08 : totalWeight * 0.06,
+                    50
+                );
+                postProcessingCost += dyeCost;
+            }
+
+            if (document.getElementById('vapor_smoothing').checked) {
+                const smoothCost = Math.max(
+                    totalWeight <= 1000 ? totalWeight * 0.12 : totalWeight * 0.10,
+                    80
+                );
+                postProcessingCost += smoothCost;
+            }
+
+            if (document.getElementById('painting').checked) {
+                const paintingCost = 20.00 + surfaceArea * 0.05;
+                postProcessingCost += paintingCost;
+            }
+
+            if (document.getElementById('vibro').checked) {
+                postProcessingCost += 20;
+            }
+
+            // Final total with minimum price enforcement
+            const subtotal = finalUnitPrice * qty;
+            const totalPrice = subtotal + postProcessingCost;
+            const finalTotal = Math.max(totalPrice, constants.P_min);
+
+            // Update display
+            document.getElementById('finalPrice').textContent = `€${finalTotal.toFixed(2)}`;
+            
+            // Price info
+            let priceInfo = `Per part: €${finalUnitPrice.toFixed(2)}`;
+            if (discountFactor < 1) {
+                priceInfo += `<br>Quantity discount: ${((1 - discountFactor) * 100).toFixed(0)}%`;
+            }
+            if (postProcessingCost > 0) {
+                priceInfo += `<br>Post-processing: €${postProcessingCost.toFixed(2)}`;
+            }
+            if (finalTotal > totalPrice) {
+                priceInfo += `<br>Minimum order applied`;
+            }
+            document.getElementById('priceInfo').innerHTML = priceInfo;
+
+            // Cost breakdown
+            let breakdown = `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Build Cost (actual charge)</span>
+                    <span class="breakdown-value">€${(buildCostPerPart * qty / marginFactor).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item" style="margin-left: 15px; font-size: 0.9em; opacity: 0.8;">
+                    <span class="breakdown-label">↳ Machine Time (€${buildCostExploded.machineTime.toFixed(0)}/build)</span>
+                    <span class="breakdown-value">€${(machineCost * qty).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item" style="margin-left: 15px; font-size: 0.9em; opacity: 0.8;">
+                    <span class="breakdown-label">↳ Depreciation (€${buildCostExploded.depreciation.toFixed(0)}/build)</span>
+                    <span class="breakdown-value">€${(depreciationCost * qty).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item" style="margin-left: 15px; font-size: 0.9em; opacity: 0.8;">
+                    <span class="breakdown-label">↳ Overheads (€${buildCostExploded.overheads.toFixed(0)}/build)</span>
+                    <span class="breakdown-value">€${(overheadsCost * qty).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item" style="margin-left: 15px; font-size: 0.9em; opacity: 0.8;">
+                    <span class="breakdown-label">↳ Maintenance (€${buildCostExploded.maintenance.toFixed(0)}/build)</span>
+                    <span class="breakdown-value">€${(maintenanceCost * qty).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Material Cost</span>
+                    <span class="breakdown-value">€${(matCost * qty).toFixed(2)}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Margin (${margin}%)</span>
+                    <span class="breakdown-value">€${((unitPrice - unitPriceNoMargin) * qty).toFixed(2)}</span>
+                </div>`;
+
+            if (geoCost > 0) {
+                breakdown += `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Geometry Cost</span>
+                    <span class="breakdown-value">€${(geoCost * qty).toFixed(2)}</span>
+                </div>`;
+            }
+
+            if (postProcessingCost > 0) {
+                breakdown += `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Post-Processing</span>
+                    <span class="breakdown-value">€${postProcessingCost.toFixed(2)}</span>
+                </div>`;
+            }
+
+            document.getElementById('costBreakdown').innerHTML = breakdown;
+
+            // Build information
+            let buildInfo = `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Technology</span>
+                    <span class="breakdown-value">${selectedTech}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Build Volume</span>
+                    <span class="breakdown-value">${(tech.buildVolume/1000).toFixed(1)}L</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Build Price</span>
+                    <span class="breakdown-value">€${tech.buildPrice}</span>
+                </div>`;
+            
+            if (packingMethod === 'bounding_box') {
+                buildInfo += `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Bounding Box (mm)</span>
+                    <span class="breakdown-value">${dimX} × ${dimY} × ${dimZ}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Bounding Box Volume</span>
+                    <span class="breakdown-value">${bbVol.toFixed(2)} cm³</span>
+                </div>`;
+            }
+            
+            buildInfo += `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Parts per Build</span>
+                    <span class="breakdown-value">${effectiveFit}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Full Builds</span>
+                    <span class="breakdown-value">${fullBuilds}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Partial Build</span>
+                    <span class="breakdown-value">${partialParts > 0 ? `${partialParts} parts` : 'None'}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Packing Method</span>
+                    <span class="breakdown-value">${packingMethod.replace('_', ' ')}</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Packing Efficiency</span>
+                    <span class="breakdown-value">${(tech.packingFactor * 100).toFixed(0)}%</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Total Weight</span>
+                    <span class="breakdown-value">${totalWeight.toFixed(0)}g</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Discount Factor</span>
+                    <span class="breakdown-value">${(discountFactor * 100).toFixed(0)}%</span>
+                </div>
+            `;
+            document.getElementById('buildInfo').innerHTML = buildInfo;
+        }
+
+        // Initialize
+        updateMaterialOptions();
+        calculatePrice();
+    </script>
+</body>
+</html>
