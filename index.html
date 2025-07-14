@@ -223,6 +223,7 @@
       const nestTotal = constants.nestingTime * constants.workerRate;
       const nestingCost = nestTotal / Math.max(effectiveFit, 1);
 
+      // Use machine cost per part correctly!
       const unitPriceNoMargin =
         buildCostPerPart +
         matCost +
@@ -298,7 +299,7 @@
           <span class="result-value">€${results.materialCost.toFixed(2)}</span>
         </div>
         <div class="result-item">
-          <span class="result-label">Machine Cost (fractured):</span>
+          <span class="result-label">Machine Cost per Part:</span>
           <span class="result-value">€${results.machineCost.toFixed(2)}</span>
         </div>
         <div class="result-item">
