@@ -64,27 +64,66 @@
         <div class="form-grid">
           <div class="form-group">
             <label>X Dimension (mm)</label>
-            <input type="number" id="dimX" value="50" min="1" step="0.1" />
+            <input type="number" id="dimX" />
           </div>
           <div class="form-group">
             <label>Y Dimension (mm)</label>
-            <input type="number" id="dimY" value="50" min="1" step="0.1" />
+            <input type="number" id="dimY" />
           </div>
           <div class="form-group">
             <label>Z Dimension (mm)</label>
-            <input type="number" id="dimZ" value="50" min="1" step="0.1" />
+            <input type="number" id="dimZ" />
           </div>
           <div class="form-group">
             <label>Part Volume (cm³)</label>
-            <input type="number" id="partVol" value="25" min="0.1" step="0.1" />
+            <input type="number" id="partVol" step="0.1" />
           </div>
         </div>
       </div>
 
       <div id="viewer"></div>
 
-      <!-- rest of your form as before -->
-      <!-- add your existing calculator UI here, unchanged -->
+      <div class="section">
+        <h3>Order Details</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="quantity" />
+          </div>
+          <div class="form-group">
+            <label>Material</label>
+            <select id="material">
+              <option value="pa12">PA12 - €40/kg</option>
+              <option value="pa11">PA11 - €75/kg</option>
+              <option value="pa12GF">PA12GF - €41/kg</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Geometry Rate (€/cm³)</label>
+            <input type="number" id="geomRate" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Margin (%)</label>
+            <input type="number" id="margin" step="1" />
+          </div>
+        </div>
+      </div>
+
+      <div class="postprocessing">
+        <h3>Post-Processing Add-ons</h3>
+        <div class="checkbox-group">
+          <input type="checkbox" id="dyeing" />
+          <label for="dyeing">Dyeing (€0.08/g up to 1kg, then €0.06/g, min €50)</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="smoothing" />
+          <label for="smoothing">Chemical Smoothing (€0.12/g up to 1kg, then €0.10/g, min €80)</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="vibro" />
+          <label for="vibro">Vibro Finishing (€20 flat fee)</label>
+        </div>
+      </div>
 
       <button class="calculate-btn" onclick="calculateQuote()">Calculate Quote</button>
 
@@ -96,7 +135,6 @@
     </div>
   </div>
 
-  <!-- Import Three.js and STLLoader -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/STLLoader.js"></script>
 
@@ -117,6 +155,13 @@
       nestingTime: 1.0,
     };
 
+    const buildCostExploded = {
+      machineTime: 700,
+      depreciation: 200,
+      overheads: 100,
+      maintenance: 50,
+    };
+
     const materials = {
       pa12: { density: 1.01, price: 40, productivity: 45 },
       pa11: { density: 1.03, price: 75, productivity: 42 },
@@ -130,11 +175,11 @@
 
     function switchTech(tech) {
       currentTech = tech;
-      document.querySelectorAll(".tech-tab").forEach((tab) => tab.classList.remove("active"));
+      document.querySelectorAll(".tech-tab").forEach(tab => tab.classList.remove("active"));
       event.target.classList.add("active");
     }
 
-    document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+    document.getElementById("fileInput").addEventListener("change", handleFileUpload);
 
     function handleFileUpload(event) {
       const file = event.target.files[0];
@@ -143,27 +188,24 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const contents = e.target.result;
-
         const loader = new THREE.STLLoader();
         const geometry = loader.parse(contents);
 
-        // Compute bounding box
         geometry.computeBoundingBox();
         const box = geometry.boundingBox;
-
-        const sizeX = (box.max.x - box.min.x) * 1; // in mm
-        const sizeY = (box.max.y - box.min.y) * 1;
-        const sizeZ = (box.max.z - box.min.z) * 1;
+        const sizeX = box.max.x - box.min.x;
+        const sizeY = box.max.y - box.min.y;
+        const sizeZ = box.max.z - box.min.z;
 
         document.getElementById("dimX").value = sizeX.toFixed(2);
         document.getElementById("dimY").value = sizeY.toFixed(2);
         document.getElementById("dimZ").value = sizeZ.toFixed(2);
 
-        // Calculate volume in cm³
-        let volume = computeMeshVolume(geometry) / 1000; // from mm³ to cm³
+        const volume = computeMeshVolume(geometry) / 1000; // mm³ → cm³
         document.getElementById("partVol").value = volume.toFixed(2);
 
         displaySTL(geometry);
+        calculateQuote();
       };
 
       reader.readAsArrayBuffer(file);
@@ -176,44 +218,37 @@
         const ax = pos.getX(i);
         const ay = pos.getY(i);
         const az = pos.getZ(i);
-        const bx = pos.getX(i+1);
-        const by = pos.getY(i+1);
-        const bz = pos.getZ(i+1);
-        const cx = pos.getX(i+2);
-        const cy = pos.getY(i+2);
-        const cz = pos.getZ(i+2);
-
+        const bx = pos.getX(i + 1);
+        const by = pos.getY(i + 1);
+        const bz = pos.getZ(i + 1);
+        const cx = pos.getX(i + 2);
+        const cy = pos.getY(i + 2);
+        const cz = pos.getZ(i + 2);
         volume += signedTetrahedronVolume(ax, ay, az, bx, by, bz, cx, cy, cz);
       }
       return Math.abs(volume);
     }
 
     function signedTetrahedronVolume(ax, ay, az, bx, by, bz, cx, cy, cz) {
-      return (1/6) * (
-        ax * (by*cz - bz*cy) +
-        bx * (cy*az - cz*ay) +
-        cx * (ay*bz - az*by)
+      return (1 / 6) * (
+        ax * (by * cz - bz * cy) +
+        bx * (cy * az - cz * ay) +
+        cx * (ay * bz - az * by)
       );
     }
 
     function displaySTL(geometry) {
-      if (!renderer) {
-        initThreeJS();
-      }
-      if (mesh) {
-        scene.remove(mesh);
-      }
+      if (!renderer) initThreeJS();
+
+      if (mesh) scene.remove(mesh);
       const material = new THREE.MeshNormalMaterial({ flatShading: true });
       mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
 
-      // Center the geometry
       geometry.computeBoundingBox();
       const center = new THREE.Vector3();
       geometry.boundingBox.getCenter(center);
       mesh.position.sub(center);
-
-      renderer.render(scene, camera);
     }
 
     function initThreeJS() {
@@ -222,17 +257,27 @@
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, 400);
       document.getElementById("viewer").appendChild(renderer.domElement);
-
       camera.position.z = 150;
       const light = new THREE.DirectionalLight(0xffffff, 1);
       light.position.set(1, 1, 1).normalize();
       scene.add(light);
+      animate();
     }
 
-    function calculateQuote() {
-      // your existing calculation logic here
-      alert("Calculation logic remains unchanged in this snippet.");
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
     }
+
+    // YOUR EXISTING CALCULATOR LOGIC GOES HERE.
+    function calculateQuote() {
+      alert("TODO: insert your final calculation logic here!");
+      document.getElementById("results").style.display = "block";
+    }
+
+    window.onload = () => {
+      document.getElementById("results").style.display = "none";
+    };
   </script>
 </body>
 </html>
