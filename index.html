@@ -83,47 +83,7 @@
 
       <div id="viewer"></div>
 
-      <div class="section">
-        <h3>Order Details</h3>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Quantity</label>
-            <input type="number" id="quantity" />
-          </div>
-          <div class="form-group">
-            <label>Material</label>
-            <select id="material">
-              <option value="pa12">PA12 - €40/kg</option>
-              <option value="pa11">PA11 - €75/kg</option>
-              <option value="pa12GF">PA12GF - €41/kg</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Geometry Rate (€/cm³)</label>
-            <input type="number" id="geomRate" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label>Margin (%)</label>
-            <input type="number" id="margin" step="1" />
-          </div>
-        </div>
-      </div>
-
-      <div class="postprocessing">
-        <h3>Post-Processing Add-ons</h3>
-        <div class="checkbox-group">
-          <input type="checkbox" id="dyeing" />
-          <label for="dyeing">Dyeing (€0.08/g up to 1kg, then €0.06/g, min €50)</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="smoothing" />
-          <label for="smoothing">Chemical Smoothing (€0.12/g up to 1kg, then €0.10/g, min €80)</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="vibro" />
-          <label for="vibro">Vibro Finishing (€20 flat fee)</label>
-        </div>
-      </div>
+      <!-- ... your Order Details, Post-processing, Calculate Button ... -->
 
       <button class="calculate-btn" onclick="calculateQuote()">Calculate Quote</button>
 
@@ -142,57 +102,23 @@
     let currentTech = "MJF";
     let scene, camera, renderer, mesh;
 
-    const constants = {
-      buildVolume: 36115.2,
-      buildPrice: 1050,
-      packingFactor: 0.85,
-      geometryFloor: 30,
-      electricityRate: 0.24,
-      machinePower: 13.5,
-      workerRate: 50,
-      setupTime: 0.5,
-      mixingTime: 0.1,
-      nestingTime: 1.0,
-    };
-
-    const buildCostExploded = {
-      machineTime: 700,
-      depreciation: 200,
-      overheads: 100,
-      maintenance: 50,
-    };
-
-    const materials = {
-      pa12: { density: 1.01, price: 40, productivity: 45 },
-      pa11: { density: 1.03, price: 75, productivity: 42 },
-      pa12GF: { density: 1.20, price: 41, productivity: 38 },
-    };
-
-    const techSettings = {
-      MJF: { machineRate: 35, refreshRate: 0 },
-      SLS: { machineRate: 40, refreshRate: 0.15 },
-    };
-
     function switchTech(tech) {
       currentTech = tech;
       document.querySelectorAll(".tech-tab").forEach(tab => tab.classList.remove("active"));
       event.target.classList.add("active");
     }
 
-    document.getElementById("fileInput").addEventListener("change", handleFileUpload);
-
-    function handleFileUpload(event) {
-      const file = event.target.files[0];
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const contents = e.target.result;
-        const loader = new THREE.STLLoader();
-        const geometry = loader.parse(contents);
+      const url = URL.createObjectURL(file);
+      const loader = new THREE.STLLoader();
 
+      loader.load(url, (geometry) => {
         geometry.computeBoundingBox();
         const box = geometry.boundingBox;
+
         const sizeX = box.max.x - box.min.x;
         const sizeY = box.max.y - box.min.y;
         const sizeZ = box.max.z - box.min.z;
@@ -201,15 +127,15 @@
         document.getElementById("dimY").value = sizeY.toFixed(2);
         document.getElementById("dimZ").value = sizeZ.toFixed(2);
 
-        const volume = computeMeshVolume(geometry) / 1000; // mm³ → cm³
+        const volume = computeMeshVolume(geometry) / 1000;
         document.getElementById("partVol").value = volume.toFixed(2);
 
         displaySTL(geometry);
         calculateQuote();
-      };
 
-      reader.readAsArrayBuffer(file);
-    }
+        URL.revokeObjectURL(url);
+      });
+    });
 
     function computeMeshVolume(geometry) {
       let volume = 0;
@@ -218,22 +144,23 @@
         const ax = pos.getX(i);
         const ay = pos.getY(i);
         const az = pos.getZ(i);
-        const bx = pos.getX(i + 1);
-        const by = pos.getY(i + 1);
-        const bz = pos.getZ(i + 1);
-        const cx = pos.getX(i + 2);
-        const cy = pos.getY(i + 2);
-        const cz = pos.getZ(i + 2);
+        const bx = pos.getX(i+1);
+        const by = pos.getY(i+1);
+        const bz = pos.getZ(i+1);
+        const cx = pos.getX(i+2);
+        const cy = pos.getY(i+2);
+        const cz = pos.getZ(i+2);
+
         volume += signedTetrahedronVolume(ax, ay, az, bx, by, bz, cx, cy, cz);
       }
       return Math.abs(volume);
     }
 
     function signedTetrahedronVolume(ax, ay, az, bx, by, bz, cx, cy, cz) {
-      return (1 / 6) * (
-        ax * (by * cz - bz * cy) +
-        bx * (cy * az - cz * ay) +
-        cx * (ay * bz - az * by)
+      return (1/6) * (
+        ax * (by*cz - bz*cy) +
+        bx * (cy*az - cz*ay) +
+        cx * (ay*bz - az*by)
       );
     }
 
@@ -258,6 +185,7 @@
       renderer.setSize(window.innerWidth, 400);
       document.getElementById("viewer").appendChild(renderer.domElement);
       camera.position.z = 150;
+
       const light = new THREE.DirectionalLight(0xffffff, 1);
       light.position.set(1, 1, 1).normalize();
       scene.add(light);
@@ -269,9 +197,8 @@
       renderer.render(scene, camera);
     }
 
-    // YOUR EXISTING CALCULATOR LOGIC GOES HERE.
     function calculateQuote() {
-      alert("TODO: insert your final calculation logic here!");
+      alert("TODO: Insert your final calculator logic here!");
       document.getElementById("results").style.display = "block";
     }
 
