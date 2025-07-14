@@ -143,6 +143,13 @@
       nestingTime: 1.0,
     };
 
+    const buildCostExploded = {
+      machineTime: 700,
+      depreciation: 200,
+      overheads: 100,
+      maintenance: 50,
+    };
+
     const materials = {
       pa12: { density: 1.01, price: 40, productivity: 45 },
       pa11: { density: 1.03, price: 75, productivity: 42 },
@@ -210,11 +217,7 @@
 
       const matCost = (partVol * mat.density) / 1000 * mat.price * (1 + tech.refreshRate);
 
-      const totalPartHours = (partVol / mat.productivity) * qty;
-      const machineCostTotal = totalPartHours * tech.machineRate;
-      const machineCostPerPart = machineCostTotal / qty;
-
-      const energyCostTotal = totalPartHours * constants.machinePower * constants.electricityRate;
+      const energyCostTotal = ((partVol / mat.productivity) * qty) * constants.machinePower * constants.electricityRate;
       const energyCost = energyCostTotal / qty;
 
       const laborTotal = (constants.setupTime + constants.mixingTime) * constants.workerRate;
@@ -223,14 +226,12 @@
       const nestTotal = constants.nestingTime * constants.workerRate;
       const nestingCost = nestTotal / Math.max(effectiveFit, 1);
 
-      // Use machine cost per part correctly!
       const unitPriceNoMargin =
         buildCostPerPart +
         matCost +
         energyCost +
         laborCost +
-        nestingCost +
-        machineCostPerPart;
+        nestingCost;
 
       const unitPrice = unitPriceNoMargin + buildCostDiff;
 
@@ -268,13 +269,15 @@
       displayResults({
         buildCost: buildCostPerPart,
         buildCostWithMargin,
-        machineCost: machineCostPerPart,
         materialCost: matCost,
         energyCost,
         laborCost,
         nestingCost,
         discountFactor,
         unitPrice: finalUnitPrice,
+        totalBuildCost: constants.buildPrice,
+        machineCostExploded: buildCostExploded,
+        partsInBuild: effectiveFit,
         postProcessingCost,
         totalPrice,
         qty,
@@ -285,7 +288,22 @@
       const breakdown = document.getElementById("breakdown");
       const totalPrice = document.getElementById("totalPrice");
 
+      const explodedHtml = Object.entries(results.machineCostExploded)
+        .map(([key, value]) =>
+          `<div class="result-item"><span class="result-label">${key}:</span><span class="result-value">€${value.toFixed(2)}</span></div>`
+        )
+        .join("");
+
       breakdown.innerHTML = `
+        <div class="result-item">
+          <span class="result-label">Full Build Cost (per build):</span>
+          <span class="result-value">€${results.totalBuildCost.toFixed(2)}</span>
+        </div>
+        ${explodedHtml}
+        <div class="result-item">
+          <span class="result-label">Parts in Build:</span>
+          <span class="result-value">${results.partsInBuild}</span>
+        </div>
         <div class="result-item">
           <span class="result-label">Build Cost per Part (base):</span>
           <span class="result-value">€${results.buildCost.toFixed(2)}</span>
@@ -297,10 +315,6 @@
         <div class="result-item">
           <span class="result-label">Material Cost:</span>
           <span class="result-value">€${results.materialCost.toFixed(2)}</span>
-        </div>
-        <div class="result-item">
-          <span class="result-label">Machine Cost per Part:</span>
-          <span class="result-value">€${results.machineCost.toFixed(2)}</span>
         </div>
         <div class="result-item">
           <span class="result-label">Energy Cost:</span>
